@@ -1,38 +1,49 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { PrismaService } from 'src/prisma.service';
 
 
 @Injectable()
 export class TaskService {
-  private TASKS=[
-    {
-      id:1,
-      name:'task',
-      isDone:false
-    }
-  ]
-  create(createTaskDto: CreateTaskDto) {
-    this.TASKS.push({
-      id:this.TASKS.length,
-      isDone:true,
-      name:createTaskDto.name
-    })
+  constructor(private prisma:PrismaService){}
 
-    return this.TASKS
+
+ async getById(id:any){
+    const tasks=await this.prisma.post.findUnique({
+      where:{
+        id:+id,
+      }
+    })
+    if(!tasks) throw new NotFoundException("Tasks not found")
+    return tasks
+  }
+  
+  create(createTaskDto: CreateTaskDto) {
+    return this.prisma.post.create({
+      data: createTaskDto
+    })
   }
 
   findAll() {
-    return this.TASKS
+    return this.prisma.post.findMany()
   }
 
-  findOne(id: number) {
+  findOne(id: string) {
     return `This action returns a #${id} task`;
   }
 
-  update(id: number, updateTaskDto: UpdateTaskDto) {
-   const tasks=this.TASKS.find(task => task.id === +id)
-   tasks.isDone=!tasks.isDone
+  async update(id: string, updateTaskDto: UpdateTaskDto) {
+   const tasks=await this.getById(id)
+   return this.prisma.post.update({
+    where:{
+      id:+(tasks.id)
+    },
+    data:{
+      isDone:!(await tasks).isDone
+    }
+   })
+   
    
 
   return tasks
